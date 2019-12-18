@@ -1,0 +1,34 @@
+%% emq.plugin.kafka.server, 给emqx增加一个emq.plugin.kafka.server的可配置属性
+{mapping, "emqx.plugin.kafka.server", "emqx_plugin_kafka.kafka", [
+  {default, {"192.168.10.220", 9092}},
+  {datatype, [integer, ip, string]}
+]}.
+
+
+%% emqx.plugin.kafka.topic,给emqx增加一个emqx.plugin.kafka.topic的可配置属性
+{mapping, "emqx.plugin.kafka.topic", "emqx_plugin_kafka.kafka", [
+  {default, "emqx_connect_message"},
+  {datatype, string},
+  hidden
+]}.
+
+%% translation
+{
+    translation,
+    "emqx_plugin_kafka.kafka",
+    fun(Conf) ->
+            {RHost, RPort} = case cuttlefish:conf_get("emq.plugin.kafka.server", Conf) of
+                                 {Ip, Port} -> {Ip, Port};
+                                 S          -> case string:tokens(S, ":") of
+                                                   [Domain]       -> {Domain, 9092};
+                                                   [Domain, Port] -> {Domain, list_to_integer(Port)}
+                                               end
+                             end,
+            Topic = cuttlefish:conf_get("emq.plugin.kafka.topic", Conf),
+            [
+             {host, RHost},
+             {port, RPort},
+             {topic, Topic}
+            ]
+    end
+}.
